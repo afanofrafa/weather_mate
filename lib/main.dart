@@ -1,5 +1,17 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'screens/main_weather_screen.dart';
+import 'screens/daily_weather_screen.dart';
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.unknown,
+  };
+}
 
 void main() {
   runApp(WeatherMateApp());
@@ -12,20 +24,28 @@ class WeatherMateApp extends StatefulWidget {
 
 class _WeatherMateAppState extends State<WeatherMateApp> {
   bool isDarkMode = true;
+  final PageController _controller = PageController();
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scrollBehavior: AppScrollBehavior(),
       title: 'Weather Mate',
       theme: isDarkMode ? ThemeData.dark() : ThemeData.light(),
       debugShowCheckedModeBanner: false,
-      home: MainWeatherScreen(
-        isDarkMode: isDarkMode,
-        onToggleTheme: () {
-          setState(() {
-            isDarkMode = !isDarkMode;
-          });
-        },
+      home: PageView(
+        controller: _controller,
+        children: [
+          MainWeatherScreen(
+            isDarkMode: isDarkMode,
+            onToggleTheme: () {
+              setState(() => isDarkMode = !isDarkMode);
+            },
+          ),
+          DailyWeatherScreen(
+            isDarkMode: isDarkMode,
+          ),
+        ],
       ),
     );
   }
