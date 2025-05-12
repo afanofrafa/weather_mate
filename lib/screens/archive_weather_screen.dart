@@ -54,13 +54,12 @@ class _ArchiveWeatherScreenState extends State<ArchiveWeatherScreen> {
                   ),
                   const SizedBox(height: 20),
                   CitySearchWidget(
-                    onCitySelected: (cityName) {
+                    onCitySelected: (displayName, cityOnly) async {
+                      Navigator.pop(context);
                       setState(() {
-                        _selectedCity = cityName;
-                        _cityController.text = cityName;
+                        _selectedCity = displayName; // Показать полный формат
                       });
                     },
-                    //isDarkMode: widget.isDarkMode,
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(

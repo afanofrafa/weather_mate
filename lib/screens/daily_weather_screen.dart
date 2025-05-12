@@ -53,7 +53,7 @@ class DailyWeatherScreen extends StatelessWidget {
             children: [
               Center(
                 child: Text(
-                  'Дневная погода',
+                  'Погода на день',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: textColor,
                     fontWeight: FontWeight.bold,
@@ -75,7 +75,7 @@ class DailyWeatherScreen extends StatelessWidget {
                   children: [
                     Icon(Icons.cloud, size: 100, color: textColor),
                     Text(
-                      '68°F',
+                      '13°С',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: textColor,
                         fontWeight: FontWeight.bold,

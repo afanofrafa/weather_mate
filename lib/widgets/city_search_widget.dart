@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class CitySearchWidget extends StatefulWidget {
-  final Function(String cityName) onCitySelected;
+  final Function(String displayName, String cityOnlyName) onCitySelected;
 
   const CitySearchWidget({Key? key, required this.onCitySelected}) : super(key: key);
 
@@ -13,12 +13,12 @@ class CitySearchWidget extends StatefulWidget {
 
 class _CitySearchWidgetState extends State<CitySearchWidget> {
   final TextEditingController _controller = TextEditingController();
-  List<String> _suggestions = [];
+  List<Map<String, String>> _suggestions = [];
 
   Future<void> _fetchCitySuggestions(String query) async {
     if (query.length < 3) return;
 
-    final url = Uri.parse('https://wft-geo-db.p.rapidapi.com/v1/geo/cities?namePrefix=$query&limit=5');
+    final url = Uri.parse('https://wft-geo-db.p.rapidapi.com/v1/geo/cities?namePrefix=$query&limit=10');
     final response = await http.get(url, headers: {
       'X-RapidAPI-Key': '993922b5f3mshc1d0a910a76c84bp1ad143jsne70a7f222492',
       'X-RapidAPI-Host': 'wft-geo-db.p.rapidapi.com',
@@ -29,9 +29,14 @@ class _CitySearchWidgetState extends State<CitySearchWidget> {
       final cities = data['data'] as List;
 
       setState(() {
-        _suggestions = cities
-            .map((city) => '${city['city']}, ${city['countryCode']}')
-            .toList();
+        _suggestions = cities.map((city) {
+          final cityName = city['city']?.toString() ?? '';
+          final country = city['countryCode']?.toString() ?? '';
+          return {
+            'display': '$cityName, $country',
+            'query': cityName,
+          };
+        }).toList();
       });
     } else {
       setState(() {
@@ -70,13 +75,13 @@ class _CitySearchWidgetState extends State<CitySearchWidget> {
           ),
         ),
         const SizedBox(height: 8),
-        ..._suggestions.map((city) => ListTile(
-          title: Text(city, style: TextStyle(color: textColor)),
+        ..._suggestions.map((entry) => ListTile(
+          title: Text(entry['display']!, style: TextStyle(color: textColor)),
           tileColor: backgroundColor.withOpacity(0.9),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           onTap: () {
-            widget.onCitySelected(city);
-            _controller.text = city;
+            widget.onCitySelected(entry['display']!, entry['query']!);
+            _controller.text = entry['display']!;
             setState(() => _suggestions = []);
           },
         )),
