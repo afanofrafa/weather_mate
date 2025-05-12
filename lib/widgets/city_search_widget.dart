@@ -42,19 +42,38 @@ class _CitySearchWidgetState extends State<CitySearchWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDarkMode ? const Color(0xFF2C2C2E) : Colors.white;
+    final borderColor = isDarkMode ? Colors.grey[600]! : Colors.grey[400]!;
+    final iconColor = isDarkMode ? Colors.white : Colors.black54;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+
     return Column(
       children: [
-        TextField(
-          controller: _controller,
-          decoration: InputDecoration(
-            hintText: 'Search city...',
-            suffixIcon: Icon(Icons.search),
+        Container(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor),
           ),
-          onChanged: _fetchCitySuggestions,
+          child: TextField(
+            controller: _controller,
+            style: TextStyle(color: textColor),
+            decoration: InputDecoration(
+              hintText: 'Search city...',
+              hintStyle: TextStyle(color: iconColor),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              suffixIcon: Icon(Icons.search, color: iconColor),
+            ),
+            onChanged: _fetchCitySuggestions,
+          ),
         ),
         const SizedBox(height: 8),
         ..._suggestions.map((city) => ListTile(
-          title: Text(city),
+          title: Text(city, style: TextStyle(color: textColor)),
+          tileColor: backgroundColor.withOpacity(0.9),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           onTap: () {
             widget.onCitySelected(city);
             _controller.text = city;

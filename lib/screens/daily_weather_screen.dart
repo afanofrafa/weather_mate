@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart'; // Добавить в pubspec.yaml
+import 'package:fl_chart/fl_chart.dart';
 
 class DailyWeatherScreen extends StatelessWidget {
   final bool isDarkMode;
@@ -12,14 +12,36 @@ class DailyWeatherScreen extends StatelessWidget {
     final subTextColor = isDarkMode ? Colors.white70 : Colors.black54;
     final backgroundColor = isDarkMode ? Colors.black54 : Colors.white;
 
+    final temperatureSpots = [
+      FlSpot(0, 7),
+      FlSpot(1, 10),
+      FlSpot(2, 13),
+      FlSpot(3, 17),
+      FlSpot(4, 20),
+      FlSpot(5, 23),
+      FlSpot(6, 20),
+      FlSpot(7, 17),
+    ];
+
+    final cloudinessSpots = [
+      FlSpot(0, 100),
+      FlSpot(1, 60),
+      FlSpot(2, 65),
+      FlSpot(3, 50),
+      FlSpot(4, 40),
+      FlSpot(5, 30),
+      FlSpot(6, 20),
+      FlSpot(7, 0),
+    ];
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage(
               isDarkMode
-                  ? 'assets/images/testimage.jpg'
-                  : 'assets/images/sunnyweather.webp',
+                  ? 'assets/images/darkTheme.png'
+                  : 'assets/images/lightTheme.png',
             ),
             fit: BoxFit.cover,
           ),
@@ -29,18 +51,22 @@ class DailyWeatherScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Дневная погода',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
+              Center(
+                child: Text(
+                  'Дневная погода',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Сегодня, 29 августа',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: subTextColor,
+              Center(
+                child: Text(
+                  'Сегодня, ${_formatFullDate(DateTime.now())}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: subTextColor,
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -66,65 +92,197 @@ class DailyWeatherScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // График температуры
-              // График температуры
-              Text('Температура по часам', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+              // Температура
+              Center(
+                child: Text(
+                  'Температура по часам',
+                  style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                ),
+              ),
               const SizedBox(height: 12),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12), // Уменьшает ширину графика
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: SizedBox(
-                  height: 200,
-                  child: LineChart(
-                    LineChartData(
-                      minX: -0.5,
-                      maxX: 5.5,
-                      gridData: FlGridData(show: false),
-                      titlesData: FlTitlesData(
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, _) {
-                              final hours = ['6ч', '9ч', '12ч', '15ч', '18ч', '21ч'];
-                              if (value.toInt() >= 0 && value.toInt() < hours.length) {
-                                return Text(hours[value.toInt()], style: TextStyle(color: textColor));
-                              }
-                              return const Text('');
-                            },
-                            interval: 1,
+                  height: 260,
+                  child: Stack(
+                    children: [
+                      LineChart(
+                        LineChartData(
+                          minX: -1,
+                          maxX: 8,
+                          minY: -70,
+                          maxY: 70,
+                          gridData: FlGridData(show: false),
+                          titlesData: FlTitlesData(
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                interval: 1,
+                                reservedSize: 32,
+                                getTitlesWidget: (value, _) {
+                                  final hours = ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'];
+                                  if (value.toInt() >= 0 && value.toInt() < hours.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(
+                                        hours[value.toInt()],
+                                        style: TextStyle(
+                                          color: textColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: [
-                            FlSpot(0, 14),
-                            FlSpot(1, 17),
-                            FlSpot(2, 20),
-                            FlSpot(3, 22),
-                            FlSpot(4, 19),
-                            FlSpot(5, 16),
+                          borderData: FlBorderData(show: false),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: temperatureSpots,
+                              isCurved: true,
+                              color: isDarkMode ? Colors.purpleAccent : Colors.orange,
+                              dotData: FlDotData(show: false),
+                              belowBarData: BarAreaData(show: false),
+                            ),
                           ],
-                          isCurved: true,
-                          color: Colors.orange,
-                          dotData: FlDotData(show: true),
-                          belowBarData: BarAreaData(show: false),
+                          lineTouchData: LineTouchData(enabled: false),
                         ),
-                      ],
-                    ),
+                      ),
+                      ...temperatureSpots.map((spot) {
+                        final chartWidth = MediaQuery.of(context).size.width * 0.85;
+                        final spotX = ((spot.x + 0.5) / 8) * chartWidth - 10;
+                        final spotY = 240 - ((spot.y + 70) / 140) * 240;
+
+                        return Positioned(
+                          left: spotX.clamp(0, chartWidth - 40),
+                          top: spotY.clamp(20, 240),
+                          child: Column(
+                            children: [
+                              Icon(Icons.thermostat, size: 18, color: isDarkMode ? Colors.purpleAccent : Colors.orange),
+                              Text(
+                                '${spot.y.toInt()}°C',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.purpleAccent : Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
                   ),
                 ),
               ),
-
               const SizedBox(height: 32),
 
-              // Таблица погодных условий
-              Text('Текущие условия', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+              // Облачность
+              Center(
+                child: Text(
+                  'Облачность по часам',
+                  style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(
+                  height: 260,
+                  child: Stack(
+                    children: [
+                      LineChart(
+                        LineChartData(
+                          minX: -1,
+                          maxX: 8,
+                          minY: -5,
+                          maxY: 110,
+                          gridData: FlGridData(show: false),
+                          titlesData: FlTitlesData(
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                interval: 1,
+                                reservedSize: 32,
+                                getTitlesWidget: (value, _) {
+                                  final hours = ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'];
+                                  if (value.toInt() >= 0 && value.toInt() < hours.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(
+                                        hours[value.toInt()],
+                                        style: TextStyle(
+                                          color: textColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: cloudinessSpots,
+                              isCurved: true,
+                              color: isDarkMode ? Colors.cyanAccent : Colors.blue,
+                              dotData: FlDotData(show: false),
+                              belowBarData: BarAreaData(show: false),
+                            ),
+                          ],
+                          lineTouchData: LineTouchData(enabled: false),
+                        ),
+                      ),
+                      ...cloudinessSpots.map((spot) {
+                        final chartWidth = MediaQuery.of(context).size.width * 0.85;
+                        final spotX = ((spot.x + 0.5) / 8) * chartWidth - 10;
+                        final spotY = 240 - ((spot.y) / 100) * 240 - 30;
+
+                        return Positioned(
+                          left: spotX.clamp(0, chartWidth - 40),
+                          top: spotY.clamp(20, 240),
+                          child: Column(
+                            children: [
+                              Icon(Icons.water_drop, size: 18, color: isDarkMode ? Colors.cyanAccent : Colors.blue),
+                              Text(
+                                '${spot.y.toInt()}%',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.cyanAccent : Colors.blue,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+
+              // Таблица условий
+              Center(
+                child: Text(
+                  'Текущие условия',
+                  style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                ),
+              ),
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
@@ -164,5 +322,19 @@ class DailyWeatherScreen extends StatelessWidget {
         child: Text(value, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
       ),
     ]);
+  }
+
+  String _formatFullDate(DateTime date) {
+    const weekdays = [
+      'воскресенье', 'понедельник', 'вторник', 'среда',
+      'четверг', 'пятница', 'суббота'
+    ];
+    const months = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    final weekday = weekdays[date.weekday % 7];
+    final month = months[date.month - 1];
+    return '$weekday, ${date.day} $month';
   }
 }

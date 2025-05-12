@@ -2,6 +2,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'screens/main_weather_screen.dart';
 import 'screens/daily_weather_screen.dart';
+import 'screens/weekly_weather_screen.dart';
+import 'screens/advice_screen.dart';
+import 'screens/archive_weather_screen.dart';
+
 class AppScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
@@ -45,6 +49,16 @@ class _WeatherMateAppState extends State<WeatherMateApp> {
           DailyWeatherScreen(
             isDarkMode: isDarkMode,
           ),
+          WeeklyWeatherScreen(
+            isDarkMode: isDarkMode,
+          ),
+          AdviceScreen(
+            isDarkMode: isDarkMode,
+          ),
+          ArchiveWeatherScreen(
+            isDarkMode: isDarkMode,
+          ),
+
         ],
       ),
     );

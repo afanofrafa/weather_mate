@@ -17,7 +17,29 @@ class MainWeatherScreen extends StatefulWidget {
 
 class _MainWeatherScreenState extends State<MainWeatherScreen> {
   String _selectedCity = 'Stockholm';
-  String _selectedDate = 'Sunday, Aug 29th'; // можно сделать динамически позже
+  late String _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final now = DateTime.now();
+
+    const weekdays = [
+      'понедельник', 'вторник', 'среда', 'четверг',
+      'пятница', 'суббота', 'воскресенье'
+    ];
+    const months = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+
+    final weekday = weekdays[now.weekday - 1];
+    final day = now.day;
+    final month = months[now.month - 1];
+
+    _selectedDate = 'Сегодня, $weekday, $day $month';
+  }
 
   void _openCitySearch() {
     showModalBottomSheet(
@@ -28,9 +50,9 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -48,8 +70,8 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
   @override
   Widget build(BuildContext context) {
     final backgroundImage = widget.isDarkMode
-        ? 'assets/images/testimage.jpg'
-        : 'assets/images/sunnyweather.webp';
+        ? 'assets/images/darkTheme.png'
+        : 'assets/images/lightTheme.png';
 
     final textColor = widget.isDarkMode ? Colors.white : Colors.black87;
     final subTextColor = widget.isDarkMode ? Colors.white70 : Colors.black54;
