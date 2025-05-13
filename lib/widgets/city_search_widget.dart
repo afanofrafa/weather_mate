@@ -25,6 +25,7 @@ class _CitySearchWidgetState extends State<CitySearchWidget> {
     });
 
     if (response.statusCode == 200) {
+
       final data = json.decode(response.body);
       final cities = data['data'] as List;
 

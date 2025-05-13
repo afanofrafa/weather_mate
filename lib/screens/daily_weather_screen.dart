@@ -39,16 +39,28 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
       return;
     }
 
+
     print('fetch doing api request');
     final locationModel = Provider.of<LocationModel>(context, listen: false);
-    final selectedDate = DateTime.now();
-    final dateStr = '${selectedDate.year.toString().padLeft(4, '0')}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
+    final mainWeatherModel = Provider.of<MainWeatherModel>(context, listen: false);
+    //final selectedDate = DateTime.now();
+    final dateStr = '${mainWeatherModel.selectedDateTime.year.toString().padLeft(4, '0')}-${mainWeatherModel.selectedDateTime.month.toString().padLeft(2, '0')}-${mainWeatherModel.selectedDateTime.day.toString().padLeft(2, '0')}';
 
     print('[LOG] Получение погоды для ${locationModel.city} (${locationModel.latitude}, ${locationModel.longitude})');
     print('[LOG] Выбранная дата: $dateStr');
 
+    final now = DateTime.now();
+    final difference = now.difference(mainWeatherModel.selectedDateTime).inDays;
+
+    final isHistorical = difference > 79;//79;
+
+    final baseUrl = isHistorical
+        ? 'https://historical-forecast-api.open-meteo.com/v1/forecast'
+        : 'https://api.open-meteo.com/v1/forecast';
+
+    print('[URL]:$baseUrl');
     final url = Uri.parse(
-      'https://api.open-meteo.com/v1/forecast'
+      '$baseUrl'
           '?latitude=${locationModel.latitude}'
           '&longitude=${locationModel.longitude}'
           '&hourly=temperature_2m,relativehumidity_2m,dew_point_2m,apparent_temperature,pressure_msl,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation,snowfall,precipitation_probability,weather_code,visibility'
@@ -57,6 +69,7 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
           '&timezone=auto',
     );
 
+    print('[URL]:$url');
     try {
       final response = await http.get(url);
       print(response.body);
@@ -115,18 +128,42 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 'Код погоды = ${weatherCodeList[i]}, '
                 'Видимость = ${visibilityList[i]}');
 
-            tempSpots.add(FlSpot(tempSpots.length.toDouble(), temperatureList[i].toDouble()));
-            humidSpots.add(FlSpot(humidSpots.length.toDouble(), humidityList[i].toDouble()));
-            dewPointSpots.add(FlSpot(dewPointSpots.length.toDouble(), dewPointList[i].toDouble()));
-            apparentTempSpots.add(FlSpot(apparentTempSpots.length.toDouble(), apparentTempList[i].toDouble()));
-            pressureSpots.add(FlSpot(pressureSpots.length.toDouble(), pressureList[i].toDouble()));
-            cloudCoverSpots.add(FlSpot(cloudCoverSpots.length.toDouble(), cloudCoverList[i].toDouble()));
-            windSpeedSpots.add(FlSpot(windSpeedSpots.length.toDouble(), windSpeedList[i].toDouble()));
-            windDirectionSpots.add(FlSpot(windDirectionSpots.length.toDouble(), windDirectionList[i].toDouble()));
-            precipitationSpots.add(FlSpot(precipitationSpots.length.toDouble(), precipitationList[i].toDouble()));
-            snowfallSpots.add(FlSpot(snowfallSpots.length.toDouble(), snowfallList[i].toDouble()));
-            precipProbabilitySpots.add(FlSpot(precipProbabilitySpots.length.toDouble(), precipProbabilityList[i].toDouble()));
-            visibilitySpots.add(FlSpot(visibilitySpots.length.toDouble(), visibilityList[i].toDouble()));
+            if (temperatureList[i] != null) {
+              tempSpots.add(FlSpot(tempSpots.length.toDouble(), temperatureList[i].toDouble()));
+            }
+            if (humidityList[i] != null) {
+              humidSpots.add(FlSpot(humidSpots.length.toDouble(), humidityList[i].toDouble()));
+            }
+            if (dewPointList[i] != null) {
+              dewPointSpots.add(FlSpot(dewPointSpots.length.toDouble(), dewPointList[i].toDouble()));
+            }
+            if (apparentTempList[i] != null) {
+              apparentTempSpots.add(FlSpot(apparentTempSpots.length.toDouble(), apparentTempList[i].toDouble()));
+            }
+            if (pressureList[i] != null) {
+              pressureSpots.add(FlSpot(pressureSpots.length.toDouble(), pressureList[i].toDouble()));
+            }
+            if (cloudCoverList[i] != null) {
+              cloudCoverSpots.add(FlSpot(cloudCoverSpots.length.toDouble(), cloudCoverList[i].toDouble()));
+            }
+            if (windSpeedList[i] != null) {
+              windSpeedSpots.add(FlSpot(windSpeedSpots.length.toDouble(), windSpeedList[i].toDouble()));
+            }
+            if (windDirectionList[i] != null) {
+              windDirectionSpots.add(FlSpot(windDirectionSpots.length.toDouble(), windDirectionList[i].toDouble()));
+            }
+            if (precipitationList[i] != null) {
+              precipitationSpots.add(FlSpot(precipitationSpots.length.toDouble(), precipitationList[i].toDouble()));
+            }
+            if (snowfallList[i] != null) {
+              snowfallSpots.add(FlSpot(snowfallSpots.length.toDouble(), snowfallList[i].toDouble()));
+            }
+            if (precipProbabilityList[i] != null) {
+              precipProbabilitySpots.add(FlSpot(precipProbabilitySpots.length.toDouble(), precipProbabilityList[i].toDouble()));
+            }
+            if (visibilityList[i] != null) {
+              visibilitySpots.add(FlSpot(visibilitySpots.length.toDouble(), visibilityList[i].toDouble()));
+            }
           }
         }
 
@@ -189,7 +226,7 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
               const SizedBox(height: 16),
               Center(
                 child: Text(
-                  'Сегодня, ${_formatFullDate(DateTime.now())}',
+                  '${!Provider.of<MainWeatherModel>(context, listen: false).isArchiveScreenCall ? "Сегодня, " : ""}${_formatFullDate(Provider.of<MainWeatherModel>(context, listen: false).selectedDateTime)}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: subTextColor,
                   ),
@@ -205,8 +242,8 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                     ),
                     SizedBox(height: 16.0),
                     Text(
-                      '$temperature°С',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        '${temperature.toStringAsFixed(1)}°C',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: textColor,
                         fontWeight: FontWeight.bold,
                       ),
@@ -506,7 +543,7 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
 
   String _formatFullDate(DateTime date) {
     const weekdays = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
-    return '${weekdays[date.weekday]} ${date.day} ${_getMonthName(date.month)}';
+    return '${weekdays[date.weekday - 1]}, ${date.day} ${_getMonthName(date.month)} ${date.year}';
   }
 
   String _getMonthName(int month) {

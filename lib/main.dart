@@ -29,12 +29,12 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 
 void main() {
   runApp(
-    MultiProvider(  // Используем MultiProvider, чтобы предоставить несколько провайдеров
+    MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => WeekWeatherModel()),
         ChangeNotifierProvider(create: (_) => DailyWeatherModel()),
-        ChangeNotifierProvider(create: (_) => LocationModel('', '', 0.0, 0.0)),  // Ваш LocationModel
-        ChangeNotifierProvider(create: (_) => MainWeatherModel()),  // Новый провайдер для WeatherModel
+        ChangeNotifierProvider(create: (_) => LocationModel('', '', 0.0, 0.0)),
+        ChangeNotifierProvider(create: (_) => MainWeatherModel()),
       ],
       child: WeatherMateApp(),
     ),
@@ -72,15 +72,16 @@ class _WeatherMateAppState extends State<WeatherMateApp> {
       Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
 
-      final location = await _fetchCityFromGeoDB(position.latitude, position.longitude);
+      final location =
+      await _fetchCityFromGeoDB(position.latitude, position.longitude);
 
       if (location != null && mounted) {
-        final locationModel = Provider.of<LocationModel>(
-            context, listen: false);
+        final locationModel =
+        Provider.of<LocationModel>(context, listen: false);
 
         locationModel.updateLocation(
-          location['city'] ?? 'Unknown City', // Default value if null
-          location['countryCode'] ?? 'Unknown', // Default value if null
+          location['city'] ?? 'Unknown City',
+          location['countryCode'] ?? 'Unknown',
           position.latitude,
           position.longitude,
         );
@@ -90,9 +91,12 @@ class _WeatherMateAppState extends State<WeatherMateApp> {
     }
   }
 
-  Future<Map<String, String>?> _fetchCityFromGeoDB(double lat, double lon) async {
-    final formattedLat = lat >= 0 ? '+${lat.toStringAsFixed(4)}' : lat.toStringAsFixed(4);
-    final formattedLon = lon >= 0 ? '+${lon.toStringAsFixed(4)}' : lon.toStringAsFixed(4);
+  Future<Map<String, String>?> _fetchCityFromGeoDB(
+      double lat, double lon) async {
+    final formattedLat =
+    lat >= 0 ? '+${lat.toStringAsFixed(4)}' : lat.toStringAsFixed(4);
+    final formattedLon =
+    lon >= 0 ? '+${lon.toStringAsFixed(4)}' : lon.toStringAsFixed(4);
     final isoLocation = '$formattedLat$formattedLon';
 
     final url = Uri.parse(
@@ -140,11 +144,13 @@ class _WeatherMateAppState extends State<WeatherMateApp> {
               setState(() => isDarkMode = !isDarkMode);
             },
           ),
-          // Передаем locationModel в DailyWeatherScreen
           DailyWeatherScreen(isDarkMode: isDarkMode),
           WeeklyWeatherScreen(isDarkMode: isDarkMode),
-          AdviceScreen(isDarkMode: isDarkMode, weatherType: 'rainy'),
-          ArchiveWeatherScreen(isDarkMode: isDarkMode),
+          AdviceScreen(isDarkMode: isDarkMode),
+          ArchiveWeatherScreen(
+            isDarkMode: isDarkMode,
+            controller: _controller, // ⬅️ Вот здесь передаём контроллер
+          ),
         ],
       ),
     );

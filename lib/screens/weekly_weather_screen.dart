@@ -20,14 +20,14 @@ class WeeklyWeatherScreen extends StatefulWidget {
 }
 class _WeaklyWeatherScreenState extends State<WeeklyWeatherScreen>  {
   late WeekWeatherModel weekWeatherModel;
-  late DateTime now;
+  late DateTime selectedDateTime;
   late DateTime startOfWeek;
   late DateTime endOfWeek;
   @override
   void initState() {
     super.initState();
-    now = DateTime.now();
-    startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    selectedDateTime = Provider.of<MainWeatherModel>(context, listen: false).selectedDateTime;
+    startOfWeek = selectedDateTime.subtract(Duration(days: selectedDateTime.weekday - 1));
     endOfWeek = startOfWeek.add(const Duration(days: 6));
     // Безопасно использовать listen: false в initState
     weekWeatherModel = Provider.of<WeekWeatherModel>(context, listen: false);
@@ -36,30 +36,67 @@ class _WeaklyWeatherScreenState extends State<WeeklyWeatherScreen>  {
     _fetchWeatherData();
   }
   Future<void> _fetchWeatherData() async {
-    print('fetch started');
+    print('fetch started week');
 
-    final now = DateTime.now();
-    final endDate = weekWeatherModel.endDate;
-    if (endDate != null && now.isAfter(endDate)) {
-      if (!weekWeatherModel.areAllFlagsFalse()) {
-        print('return from fetch');
-        return;
-      }
+    if (!weekWeatherModel.areAllFlagsFalse()) {
+      print('return from fetch week');
+      return;
     }
 
+    selectedDateTime = Provider.of<MainWeatherModel>(context, listen: false).selectedDateTime;
+    startOfWeek = selectedDateTime.subtract(Duration(days: selectedDateTime.weekday - 1));
+    endOfWeek = startOfWeek.add(const Duration(days: 6));
 
-
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+    weekWeatherModel = Provider.of<WeekWeatherModel>(context, listen: false);
     weekWeatherModel.startDate = startOfWeek;
+    final maxAllowedDate = DateTime.now().add(Duration(days: 14));
+    if (endOfWeek.isAfter(maxAllowedDate)) {
+      endOfWeek = maxAllowedDate;
+    }
     weekWeatherModel.endDate = endOfWeek;
-    print('fetch doing api request');
     final locationModel = Provider.of<LocationModel>(context, listen: false);
-    final startDateStr = '${startOfWeek.year.toString().padLeft(4, '0')}-${startOfWeek.month.toString().padLeft(2, '0')}-${startOfWeek.day.toString().padLeft(2, '0')}';
-    final endDateStr = '${endOfWeek.year.toString().padLeft(4, '0')}-${endOfWeek.month.toString().padLeft(2, '0')}-${endOfWeek.day.toString().padLeft(2, '0')}';
+    final startDateStr = _formatDate(startOfWeek);
+    final endDateStr = _formatDate(endOfWeek);
+
+    // Границы API
+    final now = DateTime.now();
+    final currentApiStart = now.subtract(const Duration(days: 79));
+    final currentApiEnd = now.add(const Duration(days: 15));
+    final historicalApiStart = now.subtract(const Duration(days: 1512));
+    String baseUrl;
+    final difference = now.difference(endOfWeek).inDays;
+    final diffStartEnd = endOfWeek.difference(startOfWeek).inDays + 1;
+    print('diffStartEnd: $diffStartEnd');
+    final isHistorical = difference > 79;//79;
+    if (isHistorical) {
+      baseUrl = 'https://historical-forecast-api.open-meteo.com/v1/forecast';
+    }
+    else {
+      baseUrl = 'https://api.open-meteo.com/v1/forecast';
+    }
+    //
+    // // Проверка, весь ли диапазон недели попадает в один из API
+    // if (endOfWeek.isBefore(currentApiStart) || endOfWeek.isAtSameMomentAs(currentApiStart)) {
+    //   // Только историческое API
+    //   baseUrl = 'https://historical-forecast-api.open-meteo.com/v1/forecast';
+    // } else if (startOfWeek.isAfter(currentApiEnd) || startOfWeek.isAtSameMomentAs(currentApiEnd)) {
+    //   // Данные ещё недоступны
+    //   print('[ERROR] Данные за выбранную неделю еще недоступны в API.');
+    //   return;
+    // } else if (startOfWeek.isAfter(currentApiStart) && endOfWeek.isBefore(currentApiEnd)) {
+    //   // Только обычное API
+    //   baseUrl = 'https://api.open-meteo.com/v1/forecast';
+    // } else if (startOfWeek.isBefore(currentApiStart) && endOfWeek.isAfter(currentApiStart)) {
+    //   // Смешанный диапазон, часть данных из исторического, часть из обычного
+    //   print('[ERROR] Диапазон недели пересекает границы API. Такой случай пока не обрабатывается.');
+    //   //return;
+    // } else {
+    //   print('[ERROR] Не удалось определить подходящий API для указанного диапазона.');
+    //   //return;
+    // }
 
     final url = Uri.parse(
-      'https://api.open-meteo.com/v1/forecast'
+      '$baseUrl'
           '?latitude=${locationModel.latitude}'
           '&longitude=${locationModel.longitude}'
           '&hourly=temperature_2m,relativehumidity_2m,dew_point_2m,apparent_temperature,pressure_msl,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation,snowfall,precipitation_probability,weather_code,visibility'
@@ -68,17 +105,18 @@ class _WeaklyWeatherScreenState extends State<WeeklyWeatherScreen>  {
           '&timezone=auto',
     );
 
+    print('[URL]: $url');
+
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         print(response.body);
         final data = json.decode(response.body);
         final hourlyData = data['hourly'];
-        List<int> weatherCodes = [];
+
         final weatherCodeList = hourlyData['weather_code'] as List<dynamic>;
-        for (var code in weatherCodeList) {
-          weatherCodes.add(code);  // Добавляем код погоды в список
-        }
+        final weatherCodes = weatherCodeList.map((e) => e as int).toList();
+
         final temperatureList = hourlyData['temperature_2m'] as List<dynamic>;
         final humidityList = hourlyData['relativehumidity_2m'] as List<dynamic>;
         final dewPointList = hourlyData['dew_point_2m'] as List<dynamic>;
@@ -92,25 +130,22 @@ class _WeaklyWeatherScreenState extends State<WeeklyWeatherScreen>  {
         final precipProbabilityList = hourlyData['precipitation_probability'] as List<dynamic>;
         final visibilityList = hourlyData['visibility'] as List<dynamic>;
 
-        // Разделение на 7 дней * 24 часа
         List<List<FlSpot>> splitIntoDays(List<dynamic> data) {
-          List<List<FlSpot>> result = List.generate(7, (_) => []);
+          List<List<FlSpot>> result = List.generate(diffStartEnd, (_) => []);
           for (int i = 0; i < data.length; i++) {
             int dayIndex = i ~/ 24;
             int hour = i % 24;
-            if (dayIndex < 7) {
+            if (dayIndex < diffStartEnd) {
               result[dayIndex].add(FlSpot(hour.toDouble(), (data[i] as num).toDouble()));
             }
           }
           return result;
         }
 
-        // Получение медиан по каждому дню
         List<FlSpot> computeDailyMedians(List<List<FlSpot>> dailySpots) {
-          return List.generate(7, (i) => FlSpot(i.toDouble(), median(dailySpots[i])));
+          return List.generate(diffStartEnd, (i) => FlSpot(i.toDouble(), median(dailySpots[i])));
         }
 
-        // Формируем данные
         final temperatureDaily = splitIntoDays(temperatureList);
         final humidityDaily = splitIntoDays(humidityList);
         final dewPointDaily = splitIntoDays(dewPointList);
@@ -124,7 +159,6 @@ class _WeaklyWeatherScreenState extends State<WeeklyWeatherScreen>  {
         final precipProbabilityDaily = splitIntoDays(precipProbabilityList);
         final visibilityDaily = splitIntoDays(visibilityList);
 
-        // Обновляем модель
         if (!mounted) return;
         setState(() {
           weekWeatherModel.dailySummaries = summarizeWeatherDetailed(weatherCodes);
@@ -166,6 +200,10 @@ class _WeaklyWeatherScreenState extends State<WeeklyWeatherScreen>  {
       print('[ERROR] Ошибка при запросе погоды: $e');
     }
   }
+
+  String _formatDate(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
 
   @override
   Widget build(BuildContext context) {

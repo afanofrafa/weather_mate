@@ -1,13 +1,23 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../models/main_weather_model.dart';
+import '../models/week_weather_model.dart';
+import '../models/daily_weather_model.dart';
+import '../models/location_model.dart';
+import 'package:provider/provider.dart';
 import '../widgets/city_search_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 
 class ArchiveWeatherScreen extends StatefulWidget {
   final bool isDarkMode;
+  final PageController controller; // ← добавляем это
 
-  const ArchiveWeatherScreen({Key? key, required this.isDarkMode}) : super(key: key);
+  const ArchiveWeatherScreen({
+    Key? key,
+    required this.isDarkMode,
+    required this.controller, // ← и это
+  }) : super(key: key);
 
   @override
   _ArchiveWeatherScreenState createState() => _ArchiveWeatherScreenState();
@@ -55,7 +65,7 @@ class _ArchiveWeatherScreenState extends State<ArchiveWeatherScreen> {
                   const SizedBox(height: 20),
                   CitySearchWidget(
                     onCitySelected: (displayName, cityOnly) async {
-                      Navigator.pop(context);
+                      //Navigator.pop(context);
                       setState(() {
                         _selectedCity = displayName; // Показать полный формат
                       });
@@ -118,13 +128,11 @@ class _ArchiveWeatherScreenState extends State<ArchiveWeatherScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? now,
-      firstDate: DateTime(2000),
-      lastDate: now,
+      firstDate: DateTime.now().subtract(Duration(days: 1511)), // или любую другую минимальную дату
+      lastDate: now.add(const Duration(days: 14)), // до 14 дней вперёд
       builder: (context, child) {
         return Theme(
-          data: widget.isDarkMode
-              ? ThemeData.dark()
-              : ThemeData.light(),
+          data: widget.isDarkMode ? ThemeData.dark() : ThemeData.light(),
           child: child!,
         );
       },
@@ -137,6 +145,42 @@ class _ArchiveWeatherScreenState extends State<ArchiveWeatherScreen> {
     }
   }
 
+  Future<void> _getCoordinatesForCity(String city) async {
+    final url = Uri.parse(
+      'https://geocoding-api.open-meteo.com/v1/search?name=$city&count=1&language=ru&format=json',
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['results'] != null && data['results'].isNotEmpty) {
+          final result = data['results'][0];
+          final displayName = result['name'];
+          final countryCode = result['country_code'];
+          final lat = result['latitude'];
+          final lon = result['longitude'];
+
+          Provider.of<LocationModel>(context, listen: false)
+              .updateLocation(displayName, countryCode, lat, lon);
+
+          Provider.of<MainWeatherModel>(context, listen: false).reset();
+          const weekdays = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'];
+          const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+          String str = '${weekdays[_selectedDate!.weekday - 1]}, ${_selectedDate!.day} ${months[_selectedDate!.month - 1]} ${_selectedDate!.year}';
+          Provider.of<MainWeatherModel>(context, listen: false).updateSelectedDate(str, _selectedDate!);
+          Provider.of<MainWeatherModel>(context, listen: false).updateArchiveScreenCall(true);
+          Provider.of<DailyWeatherModel>(context, listen: false).reset();
+
+          Provider.of<WeekWeatherModel>(context, listen: false).reset();
+
+          //await _fetchWeather();
+        }
+      }
+    } catch (e) {
+      print('[ERROR] Ошибка получения координат: $e');
+    }
+  }
   Future<void> _fetchWeather() async {
     if (_selectedCity.isEmpty || _selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -144,7 +188,15 @@ class _ArchiveWeatherScreenState extends State<ArchiveWeatherScreen> {
       );
       return;
     }
+    final cityOnly = _selectedCity.split(',').first.trim();
+    await _getCoordinatesForCity(cityOnly);
 
+    // print('ARCHIVE');
+    // print(_selectedCity);
+    // print(_selectedDate);
+    //Provider.of<MainWeatherModel>(context, listen: false).updateSelectedDate(_selectedDate);
+    widget.controller.jumpToPage(0);
+    /*
     // Здесь будет запрос к API для получения данных о погоде для выбранного города и даты
     final url = Uri.parse('https://api.weatherapi.com/v1/history.json?key=YOUR_API_KEY&q=$_selectedCity&dt=${DateFormat('yyyy-MM-dd').format(_selectedDate!)}');
     final response = await http.get(url);
@@ -164,6 +216,6 @@ class _ArchiveWeatherScreenState extends State<ArchiveWeatherScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ошибка загрузки данных о погоде')),
       );
-    }
+    }*/
   }
 }

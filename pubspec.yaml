@@ -57,12 +57,29 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
-    - assets/images/testimage.jpg
-    - assets/images/sunnyweather.webp
-    - assets/images/darkTheme.png
-    - assets/images/lightTheme.png
+    - assets/images/air_purifier.jpg
     - assets/images/clothing.png
+    - assets/images/darkTheme.png
+    - assets/images/flying_objects.jpg
+    - assets/images/fog_warning.jpg
+    - assets/images/hat.png
+    - assets/images/house_cold.jpg
+    - assets/images/ice_warning.jpg
+    - assets/images/layers.jpg
+    - assets/images/lightTheme.png
+    - assets/images/mask.jpg
+    - assets/images/rain_boots.png
+    - assets/images/scarf.png
+    - assets/images/shadow.jpg
+    - assets/images/slippery.png
     - assets/images/sun_protection.png
+    - assets/images/traffic_rain.png
+    - assets/images/umbrella.png
+    - assets/images/water.jpg
+    - assets/images/wind_eyes.png
+    - assets/images/wind_jacket.png
+    - assets/images/window.jpg
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
