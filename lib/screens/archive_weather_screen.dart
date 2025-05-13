@@ -48,74 +48,89 @@ class _ArchiveWeatherScreenState extends State<ArchiveWeatherScreen> {
             ),
           ),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Архив погоды',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+            child: Column(
+              children: [
+                // Ваша информация сверху
+                Text(
+                  'Архив погоды',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+
+                CitySearchWidget(
+                  onCitySelected: (displayName, cityOnly) async {
+                    setState(() {
+                      _selectedCity = displayName;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 40),
+                  ),
+                  onPressed: _pickDate,
+                  child: Text(_selectedDate == null
+                      ? 'Выбрать дату'
+                      : DateFormat('dd.MM.yyyy').format(_selectedDate!)),
+                ),
+                const SizedBox(height: 12),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 40),
+                  ),
+                  onPressed: _fetchWeather,
+                  child: const Text('Показать погоду'),
+                ),
+                const SizedBox(height: 20),
+
+                // Expanded обертывает часть, которая может изменять размер
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        if (_weatherData != null)
+                          Card(
+                            color: widget.isDarkMode
+                                ? Colors.white10
+                                : Colors.white.withOpacity(0.8),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Город: ${_weatherData!['city']}',
+                                    style: TextStyle(color: textColor),
+                                  ),
+                                  Text(
+                                    'Дата: ${_weatherData!['date']}',
+                                    style: TextStyle(color: textColor),
+                                  ),
+                                  Text(
+                                    'Температура: ${_weatherData!['temp']}°C',
+                                    style: TextStyle(color: textColor),
+                                  ),
+                                  Text(
+                                    'Описание: ${_weatherData!['description']}',
+                                    style: TextStyle(color: textColor),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 20),
-                  CitySearchWidget(
-                    onCitySelected: (displayName, cityOnly) async {
-                      //Navigator.pop(context);
-                      setState(() {
-                        _selectedCity = displayName; // Показать полный формат
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _pickDate,
-                    child: Text(_selectedDate == null
-                        ? 'Выбрать дату'
-                        : DateFormat('dd.MM.yyyy').format(_selectedDate!)),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _fetchWeather,
-                    child: const Text('Показать погоду'),
-                  ),
-                  const SizedBox(height: 20),
-                  if (_weatherData != null)
-                    Card(
-                      color: widget.isDarkMode
-                          ? Colors.white10
-                          : Colors.white.withOpacity(0.8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Город: ${_weatherData!['city']}',
-                              style: TextStyle(color: textColor),
-                            ),
-                            Text(
-                              'Дата: ${_weatherData!['date']}',
-                              style: TextStyle(color: textColor),
-                            ),
-                            Text(
-                              'Температура: ${_weatherData!['temp']}°C',
-                              style: TextStyle(color: textColor),
-                            ),
-                            Text(
-                              'Описание: ${_weatherData!['description']}',
-                              style: TextStyle(color: textColor),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],

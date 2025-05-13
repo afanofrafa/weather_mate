@@ -105,7 +105,7 @@ class AdviceScreen extends StatelessWidget {
       },
       {
         'title': 'Утепляйте конечности',
-        'image': 'assets/images/gloves.png',
+        'image': 'assets/images/gloves.jpg',
         'advice': 'Носите перчатки и тёплую обувь.',
         'weatherType': ['Снег'],
       },

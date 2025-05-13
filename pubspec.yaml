@@ -62,6 +62,7 @@ flutter:
     - assets/images/darkTheme.png
     - assets/images/flying_objects.jpg
     - assets/images/fog_warning.jpg
+    - assets/images/gloves.jpg
     - assets/images/hat.png
     - assets/images/house_cold.jpg
     - assets/images/ice_warning.jpg
