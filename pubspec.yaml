@@ -34,6 +34,7 @@ dependencies:
   fl_chart: ^0.66.0
   intl: ^0.18.1
   provider: ^6.1.0
+  weather_icons: ^3.0.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -61,6 +62,7 @@ flutter:
     - assets/images/darkTheme.png
     - assets/images/lightTheme.png
     - assets/images/clothing.png
+    - assets/images/sun_protection.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

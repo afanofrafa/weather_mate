@@ -1,22 +1,24 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+
+
 import '../widgets/city_search_widget.dart';
+import '../models/location_model.dart';
+import '../models/main_weather_model.dart';
+import '../models/daily_weather_model.dart';
+
+import '../tools/tool_icons.dart';
 
 class MainWeatherScreen extends StatefulWidget {
   final bool isDarkMode;
   final VoidCallback onToggleTheme;
-  final String initialCity;
-  final double latitude;
-  final double longitude;
 
   const MainWeatherScreen({
     Key? key,
     required this.isDarkMode,
     required this.onToggleTheme,
-    required this.initialCity,
-    required this.latitude,
-    required this.longitude,
   }) : super(key: key);
 
   @override
@@ -25,65 +27,60 @@ class MainWeatherScreen extends StatefulWidget {
 
 class _MainWeatherScreenState extends State<MainWeatherScreen> {
   late String _selectedDate;
-  late String _selectedCity;
-  late double _latitude;
-  late double _longitude;
-
-  String _weatherDesc = '';
-  double _temperature = 0.0;
-  double _precipitation = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _selectedCity = widget.initialCity;
-    _latitude = widget.latitude;
-    _longitude = widget.longitude;
     _initDate();
-    _fetchWeather();
+    Future.microtask(() => _conditionallyFetchWeather());
   }
 
   void _initDate() {
     final now = DateTime.now();
-    const weekdays = [
-      'понедельник', 'вторник', 'среда', 'четверг',
-      'пятница', 'суббота', 'воскресенье'
-    ];
-    const months = [
-      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-    ];
+    const weekdays = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'];
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    _selectedDate = 'Сегодня, ${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
+    Provider.of<MainWeatherModel>(context, listen: false).updateSelectedDate(_selectedDate);
+  }
 
-    final weekday = weekdays[now.weekday - 1];
-    final day = now.day;
-    final month = months[now.month - 1];
+  Future<void> _conditionallyFetchWeather() async {
+    //final location = Provider.of<LocationModel>(context, listen: false);
+    final weatherModel = Provider.of<MainWeatherModel>(context, listen: false);
 
-    _selectedDate = 'Сегодня, $weekday, $day $month';
+    if (weatherModel.isTemperatureLoaded &&
+        weatherModel.isPrecipitationLoaded &&
+        weatherModel.isWeatherDescLoaded &&
+        weatherModel.isSelectedDateLoaded) {
+      print('[INFO] Используем кэшированные погодные данные.');
+      return;
+    }
+
+    await _fetchWeather();
   }
 
   Future<void> _fetchWeather() async {
-    print('[LOG] MainWeatherScreen: Получение погоды для $_selectedCity ($_latitude, $_longitude)');
+    final location = Provider.of<LocationModel>(context, listen: false);
+    final weatherModel = Provider.of<MainWeatherModel>(context, listen: false);
+
+    print('[LOG] Получение погоды для ${location.city} (${location.latitude}, ${location.longitude})');
 
     final weatherUrl = Uri.parse(
-      'https://api.open-meteo.com/v1/forecast?latitude=$_latitude&longitude=$_longitude&current_weather=true&daily=precipitation_sum&timezone=auto',
+      'https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current_weather=true&daily=precipitation_sum&timezone=auto',
     );
 
     try {
-      final weatherRes = await http.get(weatherUrl);
-      if (weatherRes.statusCode == 200) {
-        final weatherData = json.decode(weatherRes.body);
-        final current = weatherData['current_weather'];
-        final daily = weatherData['daily'];
+      final response = await http.get(weatherUrl);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final current = data['current_weather'];
+        final daily = data['daily'];
 
-        setState(() {
-          _temperature = current['temperature']?.toDouble() ?? 0.0;
-          _weatherDesc = _mapWeatherCodeToDescription(current['weathercode']);
-          _precipitation = daily['precipitation_sum'][0]?.toDouble() ?? 0.0;
-        });
-
-        print('[LOG] Погода обновлена: $_temperature°C, $_weatherDesc, $_precipitation мм');
+        weatherModel.updateTemperature(current['temperature']?.toDouble() ?? 0.0);
+        weatherModel.updateWeatherDesc(_mapWeatherCodeToDescription(current['weathercode']));
+        weatherModel.updatePrecipitation(daily['precipitation_sum'][0]?.toDouble() ?? 0.0);
+        print('weatherDesc: ${Provider.of<MainWeatherModel>(context, listen: false).weatherDesc}');
       } else {
-        print('[ERROR] Ошибка погоды: ${weatherRes.statusCode}');
+        print('[ERROR] Ошибка погоды: ${response.statusCode}');
       }
     } catch (e) {
       print('[ERROR] Ошибка получения погоды: $e');
@@ -91,8 +88,6 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
   }
 
   Future<void> _getCoordinatesForCity(String city) async {
-    print('[LOG] Получение координат для города: $city');
-
     final url = Uri.parse(
       'https://geocoding-api.open-meteo.com/v1/search?name=$city&count=1&language=ru&format=json',
     );
@@ -103,22 +98,48 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
         final data = json.decode(response.body);
         if (data['results'] != null && data['results'].isNotEmpty) {
           final result = data['results'][0];
-          setState(() {
-            _latitude = result['latitude'];
-            _longitude = result['longitude'];
-            _selectedCity = '${result['name']}, ${result['country_code']}';
-          });
-          print('[LOG] Координаты получены: $_latitude, $_longitude ($_selectedCity)');
+          final displayName = result['name'];
+          final countryCode = result['country_code'];
+          final lat = result['latitude'];
+          final lon = result['longitude'];
+
+          Provider.of<LocationModel>(context, listen: false)
+              .updateLocation(displayName, countryCode, lat, lon);
+
+          Provider.of<MainWeatherModel>(context, listen: false).reset();
+
+          Provider.of<DailyWeatherModel>(context, listen: false).reset();
+
           await _fetchWeather();
-        } else {
-          print('[ERROR] Координаты не найдены для города $city');
         }
-      } else {
-        print('[ERROR] Ошибка координат: ${response.statusCode}');
       }
     } catch (e) {
       print('[ERROR] Ошибка получения координат: $e');
     }
+  }
+
+  void _openCitySearch() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: CitySearchWidget(
+            onCitySelected: (displayName, cityOnly) async {
+              Navigator.pop(context);
+              await _getCoordinatesForCity(cityOnly);
+              },
+          ),
+        ),
+      ),
+    );
   }
 
   String _mapWeatherCodeToDescription(int code) {
@@ -132,42 +153,11 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
     return 'Неизвестно';
   }
 
-  void _openCitySearch() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: CitySearchWidget(
-            onCitySelected: (displayName, cityOnly) async {
-              Navigator.pop(context);
-              setState(() {
-                _selectedCity = displayName; // Показать полный формат
-              });
-              await _getCoordinatesForCity(cityOnly); // Искать по названию города
-            },
-          ),
-
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final backgroundImage = widget.isDarkMode
-        ? 'assets/images/darkTheme.png'
-        : 'assets/images/lightTheme.png';
-
+    final location = Provider.of<LocationModel>(context);
+    final weather = Provider.of<MainWeatherModel>(context);
+    final backgroundImage = widget.isDarkMode ? 'assets/images/darkTheme.png' : 'assets/images/lightTheme.png';
     final textColor = widget.isDarkMode ? Colors.white : Colors.black87;
     final subTextColor = widget.isDarkMode ? Colors.white70 : Colors.black54;
 
@@ -205,7 +195,7 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
                 Icon(Icons.location_on, color: subTextColor, size: 20),
                 const SizedBox(height: 4),
                 Text(
-                  _selectedCity.toUpperCase(),
+                  location.city.toUpperCase(),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
@@ -216,33 +206,26 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _selectedDate,
+                  weather.selectedDate,
                   style: TextStyle(color: subTextColor, fontSize: 14),
                 ),
               ],
             ),
-            Icon(Icons.wb_sunny, size: 100, color: textColor),
-            Text(
-              '${_temperature.toStringAsFixed(0)}°С',
-              style: TextStyle(
-                fontSize: 64,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
+            Icon(getWeatherIcon(
+                Provider.of<MainWeatherModel>(context, listen: false).weatherDesc),
+                size: 120.0,
             ),
             Text(
-              _weatherDesc,
-              style: TextStyle(
-                fontSize: 22,
-                color: textColor,
-              ),
+              '${weather.temperature.toStringAsFixed(0)}°С',
+              style: TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: textColor),
             ),
             Text(
-              '${_precipitation.toStringAsFixed(1)} мм осадков',
-              style: TextStyle(
-                fontSize: 14,
-                color: subTextColor,
-              ),
+              weather.weatherDesc,
+              style: TextStyle(fontSize: 22, color: textColor),
+            ),
+            Text(
+              '${weather.precipitation.toStringAsFixed(1)} мм осадков',
+              style: TextStyle(fontSize: 14, color: subTextColor),
             ),
           ],
         ),
