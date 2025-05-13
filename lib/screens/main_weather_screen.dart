@@ -9,7 +9,7 @@ import '../models/location_model.dart';
 import '../models/main_weather_model.dart';
 import '../models/daily_weather_model.dart';
 
-import '../tools/tool_icons.dart';
+import '../tools/tools.dart';
 
 class MainWeatherScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -71,12 +71,14 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
     try {
       final response = await http.get(weatherUrl);
       if (response.statusCode == 200) {
+        print('response.body');
+        print(response.body);
         final data = json.decode(response.body);
         final current = data['current_weather'];
         final daily = data['daily'];
 
         weatherModel.updateTemperature(current['temperature']?.toDouble() ?? 0.0);
-        weatherModel.updateWeatherDesc(_mapWeatherCodeToDescription(current['weathercode']));
+        weatherModel.updateWeatherDesc(mapWeatherCodeToDescription(current['weathercode']));
         weatherModel.updatePrecipitation(daily['precipitation_sum'][0]?.toDouble() ?? 0.0);
         print('weatherDesc: ${Provider.of<MainWeatherModel>(context, listen: false).weatherDesc}');
       } else {
@@ -140,17 +142,6 @@ class _MainWeatherScreenState extends State<MainWeatherScreen> {
         ),
       ),
     );
-  }
-
-  String _mapWeatherCodeToDescription(int code) {
-    if (code == 0) return 'Ясно';
-    if ([1, 2, 3].contains(code)) return 'Переменная облачность';
-    if ([45, 48].contains(code)) return 'Туман';
-    if ([51, 53, 55, 61, 63, 65].contains(code)) return 'Дождь';
-    if ([66, 67, 71, 73, 75, 77].contains(code)) return 'Снег';
-    if ([80, 81, 82].contains(code)) return 'Ливень';
-    if ([95, 96, 99].contains(code)) return 'Гроза';
-    return 'Неизвестно';
   }
 
   @override

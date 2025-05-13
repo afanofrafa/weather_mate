@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'models/location_model.dart';
 import 'models/main_weather_model.dart';
 import 'models/daily_weather_model.dart';
+import 'models/week_weather_model.dart';
 
 import 'screens/main_weather_screen.dart';
 import 'screens/daily_weather_screen.dart';
@@ -30,6 +31,7 @@ void main() {
   runApp(
     MultiProvider(  // Используем MultiProvider, чтобы предоставить несколько провайдеров
       providers: [
+        ChangeNotifierProvider(create: (_) => WeekWeatherModel()),
         ChangeNotifierProvider(create: (_) => DailyWeatherModel()),
         ChangeNotifierProvider(create: (_) => LocationModel('', '', 0.0, 0.0)),  // Ваш LocationModel
         ChangeNotifierProvider(create: (_) => MainWeatherModel()),  // Новый провайдер для WeatherModel

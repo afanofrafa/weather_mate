@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import '../tools/tool_icons.dart';
+import '../tools/tools.dart';
 import 'package:weather_icons/weather_icons.dart';
 
 class DailyWeatherScreen extends StatefulWidget {
@@ -155,149 +155,6 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
     }
   }
 
-
-  TableRow _buildRow(String label, String value, Color textColor) {
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Text(
-            label,
-            style: TextStyle(color: textColor),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildLineChart({
-    required List<FlSpot> spots,
-    required Color lineColor,
-    required Color dotColor,
-    required String title,
-    required double minY,
-    required double maxY,
-    required BuildContext context,
-    required bool isDarkMode,
-    required IconData icon,
-    required String unit,
-    required int iconOffsetY,
-  }) {
-    final textColor = isDarkMode ? Colors.white : Colors.black87;
-
-    return Column(
-      children: [
-        Center(
-          child: Text(
-            title,
-            style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: SizedBox(
-            height: 260,
-            child: Stack(
-              children: [
-                // Основной график
-                Builder(
-                  builder: (context) {
-                    return LineChart(
-                      LineChartData(
-                        minX: -1,
-                        maxX: 8,
-                        minY: minY,
-                        maxY: maxY,
-                        gridData: FlGridData(show: false),
-                        titlesData: FlTitlesData(
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              interval: 1,
-                              reservedSize: 32,
-                              getTitlesWidget: (value, _) {
-                                final hours = ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'];
-                                if (value.toInt() >= 0 && value.toInt() < hours.length) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Text(
-                                      hours[value.toInt()],
-                                      style: TextStyle(
-                                        color: textColor,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              },
-                            ),
-                          ),
-                          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: spots,
-                            isCurved: true,
-                            color: lineColor,
-                            dotData: FlDotData(show: false),
-                            belowBarData: BarAreaData(show: false),
-                          ),
-                        ],
-                        lineTouchData: LineTouchData(enabled: false),
-                      ),
-                    );
-                  },
-                ),
-
-                // Добавляем точки с данными и иконки
-                ...spots.map((spot) {
-                  final chartWidth = MediaQuery.of(context).size.width * 0.85;
-                  final spotX = ((spot.x + 0.5) / 8) * chartWidth - 10;
-                  final spotY = 240 - ((spot.y - minY) / (maxY - minY)) * 240 - iconOffsetY;
-
-                  return Positioned(
-                    left: spotX.clamp(0, chartWidth - 40),
-                    top: spotY.clamp(20, 240),
-                    child: Column(
-                      children: [
-                        Icon(icon, size: 18, color: dotColor), // Добавляем иконку
-                        Text(
-                          '${spot.y.toInt()} $unit',  // Добавляем единицы измерения
-                          style: TextStyle(
-                            color: dotColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-
   @override
   Widget build(BuildContext context) {
     final locationModel = Provider.of<LocationModel>(context);
@@ -372,11 +229,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Температура по часам',
                 minY: -80,
                 maxY: 80,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.thermostat,
                 unit: '°C',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
               // График влажности
@@ -387,11 +248,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Влажность по часам',
                 minY: -10,
                 maxY: 120,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.water_drop,
                 unit: '%',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -403,11 +268,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Облачность по часам',
                 minY: -10,
                 maxY: 120,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.cloud,
                 unit: '%',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -419,11 +288,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Атмосферное давление по часам',
                 minY: 700,
                 maxY: 1200,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: WeatherIcons.barometer,
                 unit: 'hPa',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -435,11 +308,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Скорость ветра по часам',
                 minY: -10,
                 maxY: 300,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.air,
                 unit: 'km/h',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -451,11 +328,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Осадки по часам',
                 minY: -10,
                 maxY: 310,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.beach_access,
                 unit: 'mm',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
               // Точка росы
@@ -466,11 +347,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Точка росы по часам',
                 minY: -80,
                 maxY: 80,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.ac_unit,
                 unit: '°C',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -482,11 +367,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Ощущаемая температура по часам',
                 minY: -80,
                 maxY: 80,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.device_thermostat,
                 unit: '°C',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -498,11 +387,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Снегопад по часам',
                 minY: -10,
                 maxY: 120,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.ac_unit_outlined,
                 unit: 'cm',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -514,11 +407,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Вероятность осадков по часам',
                 minY: -10,
                 maxY: 120,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.umbrella,
                 unit: '%',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -530,11 +427,15 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Видимость по часам',
                 minY: -10,
                 maxY: 100000,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.remove_red_eye,
                 unit: 'm',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
@@ -546,47 +447,56 @@ class _DailyWeatherScreenState extends State<DailyWeatherScreen> {
                 title: 'Направление ветра по часам',
                 minY: -10,
                 maxY: 380,
+                minX: -1,
+                maxX: 8,
                 context: context,
                 isDarkMode: widget.isDarkMode,
                 icon: Icons.explore,
                 unit: '°',
                 iconOffsetY: 10,
+                graphicDeleter: 8,
+                bottomTitlesList: ['0ч', '3ч', '6ч', '9ч', '12ч', '15ч', '18ч', '21ч'],
               ),
               const SizedBox(height: 32),
 
-              // // Таблица условий
-              // Center(
-              //   child: Text(
-              //     'Текущие условия',
-              //     style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-              //   ),
-              // ),
-              // const SizedBox(height: 12),
-              // Container(
-              //   decoration: BoxDecoration(
-              //     color: widget.isDarkMode ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.8),
-              //     borderRadius: BorderRadius.circular(12),
-              //   ),
-              //   padding: const EdgeInsets.all(16),
-              //   child: Table(
-              //     defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-              //     columnWidths: const {
-              //       0: FlexColumnWidth(2),
-              //       1: FlexColumnWidth(3),
-              //     },
-              //     children: [
-              //       _buildRow('Влажность', '65%', textColor),
-              //       _buildRow('Давление', '1012 hPa', textColor),
-              //       _buildRow('Ветер', '5 м/с', textColor),
-              //       _buildRow('UV-индекс', '3 (умеренный)', textColor),
-              //       _buildRow('Ощущается как', '28°С', textColor),
-              //       _buildRow('Облачность', '45%', textColor),
-              //       _buildRow('Видимость', '10 км', textColor),
-              //       _buildRow('Точка росы', '16°С', textColor),
-              //     ],
-              //
-              //   ),
-              // ),
+              // Заголовок таблицы
+              Center(
+                child: Text(
+                  'Медианные погодные условия за день',
+                  style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+// Таблица со средними значениями
+              Container(
+                decoration: BoxDecoration(
+                  color: widget.isDarkMode ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Table(
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  columnWidths: const {
+                    0: FlexColumnWidth(2),
+                    1: FlexColumnWidth(3),
+                  },
+                  children: [
+                    buildRow('Температура', '${median(dailyWeatherModel.temperatureSpots).toStringAsFixed(1)} °C', textColor),
+                    buildRow('Влажность', '${median(dailyWeatherModel.humiditySpots).toStringAsFixed(1)} %', textColor),
+                    buildRow('Точка росы', '${median(dailyWeatherModel.dewPointSpots).toStringAsFixed(1)} °C', textColor),
+                    buildRow('Ощущается как', '${median(dailyWeatherModel.apparentTempSpots).toStringAsFixed(1)} °C', textColor),
+                    buildRow('Давление', '${median(dailyWeatherModel.pressureSpots).toStringAsFixed(1)} hPa', textColor),
+                    buildRow('Облачность', '${median(dailyWeatherModel.cloudCoverSpots).toStringAsFixed(1)} %', textColor),
+                    buildRow('Скорость ветра', '${median(dailyWeatherModel.windSpeedSpots).toStringAsFixed(1)} км/ч', textColor),
+                    buildRow('Направление ветра', '${median(dailyWeatherModel.windDirectionSpots).toStringAsFixed(0)} °', textColor),
+                    buildRow('Осадки', '${median(dailyWeatherModel.precipitationSpots).toStringAsFixed(1)} мм', textColor),
+                    buildRow('Вероятность осадков', '${median(dailyWeatherModel.precipitationProbabilitySpots).toStringAsFixed(1)} %', textColor),
+                    buildRow('Снегопад', '${median(dailyWeatherModel.snowfallSpots).toStringAsFixed(1)} см', textColor),
+                    buildRow('Видимость', '${(median(dailyWeatherModel.visibilitySpots) / 1000).toStringAsFixed(1)} км', textColor),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
