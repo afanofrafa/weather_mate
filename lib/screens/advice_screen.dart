@@ -63,7 +63,7 @@ class AdviceScreen extends StatelessWidget {
         'title': 'Следите за скользкими поверхностями',
         'image': 'assets/images/slippery.png',
         'advice': 'Будьте осторожны на лестницах и тротуарах.',
-        'weatherType': ['Дождь', 'Ливень', 'Снег'],
+        'weatherType': ['Дождь', 'Ливень'],
       },
 
       {
@@ -113,7 +113,7 @@ class AdviceScreen extends StatelessWidget {
         'title': 'Будьте внимательны на льду',
         'image': 'assets/images/ice_warning.jpg',
         'advice': 'Осторожно передвигайтесь по скользким поверхностям.',
-        'weatherType': ['Снег', 'Дождь'],
+        'weatherType': ['Снег'],
       },
 
       {
